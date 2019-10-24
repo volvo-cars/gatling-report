@@ -16,14 +16,23 @@
  */
 package org.nuxeo.tools.gatling.report;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.log4j.Logger;
 
 import com.beust.jcommander.JCommander;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.TransportAddress;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
+import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class App implements Runnable {
     protected static final String PROGRAM_NAME = "java -jar gatling-report.jar";
@@ -45,7 +54,7 @@ public class App implements Runnable {
     }
 
     public static void main(String args[]) {
-        (new Thread(new App(args))).start();
+       (new Thread(new App(args))).start();
     }
 
     @Override
@@ -105,5 +114,80 @@ public class App implements Runnable {
     protected void renderAsCsv() {
         System.out.println(RequestStat.header());
         stats.forEach(System.out::println);
+        createCSV();
+        bulkUploadCSVToES(true);
     }
+
+    protected void createCSV() {
+        try {
+            FileWriter csvWriter = new FileWriter("new.csv");
+            csvWriter.append(RequestStat.header());
+            csvWriter.append("\n");
+            for (SimulationContext s : stats) {
+                csvWriter.append(String.join(",", s.toString()));
+                csvWriter.append("\n");
+            }
+            csvWriter.flush();
+            csvWriter.close();
+        }catch(Exception e) {
+            System.out.println("exception");
+        }
+    }
+
+    protected void bulkUploadCSVToES(boolean isHeaderIncluded) {
+        TransportClient client = null;
+
+        String index = Utils.createESIndex();
+        try {
+            client = new PreBuiltTransportClient(Settings.EMPTY).addTransportAddress(
+                    new TransportAddress(InetAddress.getByName("localhost"), 9200));
+
+            BulkRequestBuilder bulkRequestBuilder = client.prepareBulk();
+            File file = new File("new.csv");
+            BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
+            String line = null;
+            if (bufferedReader != null && isHeaderIncluded) {
+                bufferedReader.readLine();
+            }
+            while ((line = bufferedReader.readLine()) != null) {
+                if (line.trim().length() == 0)
+                    continue;
+                String[] data = line.split(",");
+                XContentBuilder xContentBuilder = jsonBuilder().startObject()
+                        .field("scenario",data[1])
+                        .field("maxUsers",data[2])
+                        .field("request",data[3])
+                        .field("start",data[4])
+                        .field("startDate",data[5])
+                        .field("duration",data[6])
+                        .field("end",data[7])
+                        .field("count",data[8])
+                        .field("successCount",data[9])
+                        .field("errorCount",data[10])
+                        .field("min",data[11])
+                        .field("p50",data[12])
+                        .field("p90",data[13])
+                        .field("p95",data[14])
+                        .field("p99",data[15])
+                        .field("max",data[16])
+                        .field("avg",data[17])
+                        .field("stddev",data[18])
+                        .field("rps",data[19])
+                        .field("apdex",data[20])
+                        .field("rating",data[21])
+                        .endObject();
+
+                bulkRequestBuilder.add(client.prepareIndex(index,"").setSource(xContentBuilder));
+            }
+            bufferedReader.close();
+            BulkResponse bulkResponse = bulkRequestBuilder.execute().actionGet();
+            if(bulkResponse.hasFailures()) {
+                System.out.println("Upload to ES failed");
+                System.out.println(bulkResponse.buildFailureMessage());
+            }
+        }catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 }

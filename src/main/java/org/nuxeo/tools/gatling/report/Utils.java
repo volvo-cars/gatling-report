@@ -16,6 +16,14 @@
 
 package org.nuxeo.tools.gatling.report;
 
+import org.apache.http.HttpHost;
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
+import org.elasticsearch.action.admin.indices.create.CreateIndexResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.common.settings.Settings;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,6 +39,8 @@ import java.net.MalformedURLException;
 import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.net.URLConnection;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.zip.GZIPInputStream;
 
 public class Utils {
@@ -109,4 +119,25 @@ public class Utils {
         }
     }
 
+    public static String createESIndex(){
+        RestHighLevelClient client = new RestHighLevelClient(
+                RestClient.builder(new HttpHost("localhost",9200)));
+
+        String timeStamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+        String indexName = "gatlingreport".concat(timeStamp);
+
+        CreateIndexRequest request = new CreateIndexRequest(indexName);
+        request.settings(Settings.builder()
+                .put("index.number_of_shards", 3)
+                .put("index.number_of_replicas", 0));
+        CreateIndexResponse indexResponse = null;
+        try {
+            indexResponse = client.indices().create(request, RequestOptions.DEFAULT);
+        }
+        catch(IOException e) {
+            e.printStackTrace();
+        }
+        System.out.println("response id: "+indexResponse.index());
+        return indexResponse.index();
+    }
 }
