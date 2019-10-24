@@ -139,11 +139,15 @@ public class App implements Runnable {
 
         String index = Utils.createESIndex();
         try {
-            client = new PreBuiltTransportClient(Settings.EMPTY).addTransportAddress(
-                    new TransportAddress(InetAddress.getByName("localhost"), 9200));
+            Settings settings = Settings.builder()
+                    .put("client.transport.sniff", true)
+                    .put("cluster.name", "elasticsearch_paggarwa")
+                    .build();
+            client = new PreBuiltTransportClient(settings).addTransportAddress(
+                    new TransportAddress(InetAddress.getByName("localhost"), 9300));
 
             BulkRequestBuilder bulkRequestBuilder = client.prepareBulk();
-            File file = new File("new.csv");
+            File file = new File("/Users/paggarwa/Documents/support-backend/perf-test/new.csv");
             BufferedReader bufferedReader = new BufferedReader(new FileReader(file));
             String line = null;
             if (bufferedReader != null && isHeaderIncluded) {
@@ -152,32 +156,34 @@ public class App implements Runnable {
             while ((line = bufferedReader.readLine()) != null) {
                 if (line.trim().length() == 0)
                     continue;
-                String[] data = line.split(",");
+                String[] data = line.split("\t");
+                for(int i=0;i<data.length;i++)
+                    System.out.println(data[i]);
                 XContentBuilder xContentBuilder = jsonBuilder().startObject()
                         .field("scenario",data[1])
-                        .field("maxUsers",data[2])
-                        .field("request",data[3])
+//                            .field("maxUsers",data[2])
+//                            .field("request",data[3])
                         .field("start",data[4])
-                        .field("startDate",data[5])
+//                            .field("startDate",data[5])
                         .field("duration",data[6])
                         .field("end",data[7])
-                        .field("count",data[8])
-                        .field("successCount",data[9])
-                        .field("errorCount",data[10])
-                        .field("min",data[11])
-                        .field("p50",data[12])
-                        .field("p90",data[13])
-                        .field("p95",data[14])
-                        .field("p99",data[15])
-                        .field("max",data[16])
-                        .field("avg",data[17])
-                        .field("stddev",data[18])
-                        .field("rps",data[19])
-                        .field("apdex",data[20])
+//                            .field("count",data[8])
+//                            .field("successCount",data[9])
+//                            .field("errorCount",data[10])
+//                            .field("min",data[11])
+//                            .field("p50",data[12])
+//                            .field("p90",data[13])
+//                            .field("p95",data[14])
+//                            .field("p99",data[15])
+//                            .field("max",data[16])
+//                            .field("avg",data[17])
+//                            .field("stddev",data[18])
+//                            .field("rps",data[19])
+//                            .field("apdex",data[20])
                         .field("rating",data[21])
                         .endObject();
 
-                bulkRequestBuilder.add(client.prepareIndex(index,"").setSource(xContentBuilder));
+                bulkRequestBuilder.add(client.prepareIndex(index,"gatling").setSource(xContentBuilder));
             }
             bufferedReader.close();
             BulkResponse bulkResponse = bulkRequestBuilder.execute().actionGet();

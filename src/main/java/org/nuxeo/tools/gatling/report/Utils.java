@@ -23,6 +23,8 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -123,18 +125,34 @@ public class Utils {
         RestHighLevelClient client = new RestHighLevelClient(
                 RestClient.builder(new HttpHost("localhost",9200)));
 
-        String timeStamp = new SimpleDateFormat("yyyyMMddHHmmss").format(new Date());
+        String timeStamp = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new Date());
         String indexName = "gatlingreport".concat(timeStamp);
-
-        CreateIndexRequest request = new CreateIndexRequest(indexName);
-        request.settings(Settings.builder()
-                .put("index.number_of_shards", 3)
-                .put("index.number_of_replicas", 0));
         CreateIndexResponse indexResponse = null;
+        CreateIndexRequest request = new CreateIndexRequest(indexName);
         try {
+            XContentBuilder builder = XContentFactory.jsonBuilder();
+            builder.startObject()
+                    .startObject("properties")
+                    .startObject("scenario").field("type", "text")
+                    .endObject()
+                    .startObject("start").field("type", "text")
+                    .endObject()
+                    .startObject("end").field("type", "text")
+                    .endObject()
+                    .startObject("duration").field("type", "text")
+                    .endObject()
+                    .startObject("rating").field("type", "text")
+                    .endObject()
+                    .endObject().endObject();
+            request.mapping("gatling", builder);
+
+            request.settings(Settings.builder()
+                    .put("index.number_of_shards", 3)
+                    .put("index.number_of_replicas", 0));
+
+
             indexResponse = client.indices().create(request, RequestOptions.DEFAULT);
-        }
-        catch(IOException e) {
+        }catch (Exception e) {
             e.printStackTrace();
         }
         System.out.println("response id: "+indexResponse.index());
