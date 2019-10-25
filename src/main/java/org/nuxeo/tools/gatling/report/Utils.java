@@ -41,6 +41,7 @@ import java.net.MalformedURLException;
 import java.net.PasswordAuthentication;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.zip.GZIPInputStream;
@@ -107,7 +108,7 @@ public class Utils {
         if (GZ.equals(getFileExtension(file))) {
             InputStream fileStream = new FileInputStream(file);
             InputStream gzipStream = new GZIPInputStream(fileStream);
-            return new InputStreamReader(gzipStream, "UTF-8");
+            return new InputStreamReader(gzipStream, StandardCharsets.UTF_8);
         }
         return new FileReader(file);
     }
