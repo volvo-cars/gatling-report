@@ -32,7 +32,7 @@ public class ParserFactory {
 
     protected static SimulationParser getVersionSpecificParser(File file, Float apdexT) throws IOException {
         List<String> header = getHeaderLine(file);
-        // System.out.println(header.size() + " " + header);
+
         if (header.size() == 6) {
             String version = header.get(5);
             if (version.startsWith("3.2")) {
