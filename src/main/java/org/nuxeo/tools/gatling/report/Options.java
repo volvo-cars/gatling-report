@@ -35,6 +35,9 @@ public class Options {
     @Parameter(names = { "--port", "-p" }, description = "Elastic search port.")
     public Integer port;
 
+    @Parameter(names = { "--url", "-u" }, description = "Elastic search url.")
+    public String url;
+
     @Parameter(names = { "--help"}, description = "Display this message.")
     public Boolean help;
 

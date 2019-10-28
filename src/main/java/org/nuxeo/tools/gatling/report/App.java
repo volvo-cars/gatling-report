@@ -32,13 +32,17 @@ public class App implements Runnable {
     options = new Options();
     JCommander command = new JCommander(options, args);
     command.setProgramName(PROGRAM_NAME);
-    if (options.help) {
+    if(null==options.help){System.out.println(args.toString());}
+    else {
       command.usage();
       System.exit(0);
     }
   }
 
-  public static void main(String[] args) {new App(args);}
+//  public static void main(String[] args) {new App(args);}
+public static void main(String args[]) {
+  (new Thread(new App(args))).start();
+}
 
   @Override
   public void run() {
@@ -80,7 +84,7 @@ public class App implements Runnable {
   }
 
   private void uploadReports(List<SimulationReportDto> reports) {
-    String index = Utils.createESIndex();
+    String index = Utils.createESIndex(options.url);
 
     Settings settings = Settings.builder()
         .put("client.transport.sniff", true)
@@ -114,7 +118,9 @@ public class App implements Runnable {
   }
 
   private SimulationReportDto toDto(Map.Entry<String, RequestStat> entry) {
-    return new SimulationReportDto(entry.getKey(), entry.getValue().successCount, entry.getValue().errorCount);
+    return new SimulationReportDto(entry.getKey(), entry.getValue().successCount, entry.getValue().errorCount,
+            entry.getValue().start,entry.getValue().end,entry.getValue().duration,entry.getValue().min,
+            entry.getValue().max, entry.getValue().p50, entry.getValue().p90, entry.getValue().p95, entry.getValue().p99);
   }
 
 }
