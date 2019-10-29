@@ -20,13 +20,13 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.nuxeo.tools.gatling.report.dto.SimulationReportDto;
 
-public class App implements Runnable {
+public class App{
 
   protected static final String PROGRAM_NAME = "java -jar gatling-report.jar";
 
   private final static Logger LOGGER = Logger.getLogger(App.class);
 
-  protected final Options options;
+  protected static Options options = null;
 
   public App(String[] args) {
     options = new Options();
@@ -39,18 +39,14 @@ public class App implements Runnable {
     }
   }
 
-//  public static void main(String[] args) {new App(args);}
-public static void main(String args[]) {
-  (new Thread(new App(args))).start();
-}
-
-  @Override
-  public void run() {
+  public static void main(String args[]) {
+    new App(args);
     List<SimulationContext> statistics = parseSimulationFiles();
     generateReport(statistics);
   }
+  
 
-  protected List<SimulationContext> parseSimulationFiles() {
+  protected static List<SimulationContext> parseSimulationFiles() {
     List<SimulationContext> stats = options
         .simulations
         .stream()
@@ -60,7 +56,7 @@ public static void main(String args[]) {
     return stats;
   }
 
-  protected SimulationContext parseSimulationFile(File file) {
+  protected static SimulationContext parseSimulationFile(File file) {
     LOGGER.info("Parsing " + file.getAbsolutePath());
     try {
       SimulationParser parser = ParserFactory.getParser(file, 1.5f);
@@ -70,20 +66,20 @@ public static void main(String args[]) {
     }
   }
 
-  private List<SimulationReportDto> generateSimulationReports(List<SimulationContext> statistics) {
+  private static List<SimulationReportDto> generateSimulationReports(List<SimulationContext> statistics) {
     //TODO: is there a need for multiple scenarios?
     return statistics
-        .stream()
-        .flatMap(stat -> stat.reqStats.entrySet().stream().map(this::toDto))
-        .collect(Collectors.toList());
+            .stream()
+            .flatMap(stat -> stat.reqStats.entrySet().stream().map(entry -> toDto(entry)))
+            .collect(Collectors.toList());
   }
 
-  protected void generateReport(List<SimulationContext> statistics) {
+  protected static void generateReport(List<SimulationContext> statistics) {
     List<SimulationReportDto> reports = generateSimulationReports(statistics);
     uploadReports(reports);
   }
 
-  private void uploadReports(List<SimulationReportDto> reports) {
+  private static void uploadReports(List<SimulationReportDto> reports) {
     String index = Utils.createESIndex(options.url);
 
     Settings settings = Settings.builder()
@@ -97,7 +93,7 @@ public static void main(String args[]) {
     reports.forEach(report -> uploadSimulation(index, client, report));
   }
 
-  private InetAddress getHostByName() {
+  private static InetAddress getHostByName() {
     try {
       return InetAddress.getByName(options.hostname);
     } catch (UnknownHostException e) {
@@ -105,7 +101,7 @@ public static void main(String args[]) {
     }
   }
 
-  private void uploadSimulation(String index, Client client, SimulationReportDto report) {
+  private static void uploadSimulation(String index, Client client, SimulationReportDto report) {
     try {
       String json = new ObjectMapper().writeValueAsString(report);
       String type = "Simulation";
@@ -117,7 +113,7 @@ public static void main(String args[]) {
     }
   }
 
-  private SimulationReportDto toDto(Map.Entry<String, RequestStat> entry) {
+  private static SimulationReportDto toDto(Map.Entry<String, RequestStat> entry) {
     return new SimulationReportDto(entry.getKey(), entry.getValue().successCount, entry.getValue().errorCount,
             entry.getValue().start,entry.getValue().end,entry.getValue().duration,entry.getValue().min,
             entry.getValue().max, entry.getValue().p50, entry.getValue().p90, entry.getValue().p95, entry.getValue().p99);
