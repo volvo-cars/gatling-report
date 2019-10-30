@@ -1,10 +1,16 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>org.nuxeo.tools</groupId>
   <artifactId>gatling-report</artifactId>
-  <version>4.1-SNAPSHOT</version>
+  <version>1.0.27-SNAPSHOT</version>
+
+  <distributionManagement>
+    <repository>
+      <id>maven-releases</id>
+      <url>https://nexus.infrastructure.volvo.care/repository/snapshots/</url>
+    </repository>
+  </distributionManagement>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -116,8 +122,8 @@
               <Premain-Class>Capsule</Premain-Class>
               <!-- <Caplets>MavenCapsule</Caplets> --> <!-- uncomment for a thin capsule -->
               <Min-Java-Version>1.8.0</Min-Java-Version>
-              <JVM-Args></JVM-Args>
-              <System-Properties></System-Properties>
+              <JVM-Args />
+              <System-Properties />
             </manifestEntries>
           </archive>
           <descriptors>
@@ -136,63 +142,117 @@
           </execution>
         </executions>
       </plugin>
+<!--      <plugin>-->
+<!--        <groupId>org.apache.maven.plugins</groupId>-->
+<!--        <artifactId>maven-release-plugin</artifactId>-->
+<!--        <version>2.4.1</version>-->
+<!--        <configuration>-->
+<!--          <tagNameFormat>v@{project.version}</tagNameFormat>-->
+<!--          <autoVersionSubmodules>true</autoVersionSubmodules>-->
+<!--          <releaseProfiles>releases</releaseProfiles>-->
+<!--        </configuration>-->
+<!--      </plugin>-->
+      <plugin>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>3.0.0-M1</version>
+        <executions>
+          <execution>
+            <id>default-deploy</id>
+            <phase>deploy</phase>
+            <goals>
+              <goal>deploy</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>3.0.0-M1</version>
+        <configuration>
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>3.1.1</version>
+        <executions>
+          <execution>
+            <id>attach-javadocs</id>
+            <phase>verify</phase>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <source>8</source>
+          <verbose>true</verbose>
+          <javaApiLinks>
+            <property>
+              <name>foo</name>
+              <value>bar</value>
+            </property>
+          </javaApiLinks>
+          <additionalOptions>
+            <additionalOption>-Xdoclint:none</additionalOption>
+          </additionalOptions>
+        </configuration>
+      </plugin>
     </plugins>
 
   </build>
 
   <profiles>
-    <!-- For use by Nuxeo internal QA -->
     <profile>
-      <id>qa</id>
-      <repositories>
-        <repository>
-          <id>internal-releases</id>
-          <url>
-            http://mavenin.nuxeo.com/nexus/content/groups/internal-releases
-          </url>
-          <releases>
-            <enabled>true</enabled>
-          </releases>
-          <snapshots>
-            <enabled>false</enabled>
-          </snapshots>
-        </repository>
-        <repository>
-          <id>internal-snapshots</id>
-          <url>
-            http://mavenin.nuxeo.com/nexus/content/groups/internal-snapshots
-          </url>
-          <releases>
-            <enabled>false</enabled>
-          </releases>
-          <snapshots>
-            <enabled>true</enabled>
-            <updatePolicy>always</updatePolicy>
-          </snapshots>
-        </repository>
-      </repositories>
+      <id>releases</id>
+<!--      <repositories>-->
+<!--        <repository>-->
+<!--          <id>nexus-releases</id>-->
+<!--          <url>https://nexus.infrastructure.volvo.care/repository/snapshots/</url>-->
+<!--          <releases>-->
+<!--            <enabled>true</enabled>-->
+<!--          </releases>-->
+<!--        </repository>-->
+<!--      </repositories>-->
       <distributionManagement>
         <repository>
-          <id>public-releases</id>
-          <url>
-            http://mavenin.nuxeo.com/nexus/content/repositories/public-releases
-          </url>
+          <id>maven-releases</id>
+          <url>https://nexus.infrastructure.volvo.care/repository/snapshots/</url>
         </repository>
-        <snapshotRepository>
-          <id>public-snapshots</id>
-          <url>
-            http://mavenin.nuxeo.com/nexus/content/repositories/public-snapshots
-          </url>
-          <uniqueVersion>true</uniqueVersion>
-        </snapshotRepository>
       </distributionManagement>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <version>1.5.1</version>
+            <executions>
+              <execution>
+                <id>default-deploy</id>
+                <phase>deploy</phase>
+                <goals>
+                  <goal>deploy</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <serverId>nexus</serverId>
+              <nexusUrl>https://nexus.infrastructure.volvo.care/</nexusUrl>
+              <skipStaging>true</skipStaging>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 
   <scm>
-    <connection>scm:git:git://github.com/nuxeo/gatling-report.ogit</connection>
-    <developerConnection>scm:git:ssh://git@github.com:nuxeo/gatling-report.git</developerConnection>
-    <url>http://nuxeo.github.io</url>
+    <connection>scm:git:git@github.com:volvo-cars/gatling-report.git</connection>
+    <developerConnection>scm:git:git@github.com:volvo-cars/gatling-report.git</developerConnection>
+    <url>scm:git:git@github.com:volvo-cars/gatling-report.git</url>
+    <tag>v1.0.27-SNAPSHOT</tag>
   </scm>
 
 </project>
