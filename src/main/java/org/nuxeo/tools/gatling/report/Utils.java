@@ -115,7 +115,7 @@ public class Utils {
         RestHighLevelClient client = new RestHighLevelClient(
                 RestClient.builder(new HttpHost(url,9200)));
 
-        String timeStamp = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss").format(new Date());
+        String timeStamp = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
         String indexName = "gatlingreport".concat(timeStamp);
         CreateIndexResponse indexResponse = null;
         CreateIndexRequest request = new CreateIndexRequest(indexName);
