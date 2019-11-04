@@ -17,6 +17,8 @@
 package org.nuxeo.tools.gatling.report;
 
 import org.apache.http.HttpHost;
+import org.apache.log4j.Logger;
+import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -35,7 +37,11 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.zip.GZIPInputStream;
 
+import static java.lang.String.*;
+
 public class Utils {
+
+    private final static Logger LOGGER = Logger.getLogger(Utils.class);
 
     protected static final String GZ = "gz";
 
@@ -126,10 +132,15 @@ public class Utils {
                     .put("index.number_of_replicas", 0));
 
             indexResponse = client.indices().create(request, RequestOptions.DEFAULT);
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (ElasticsearchStatusException | IOException e) {
+            if (e instanceof ElasticsearchStatusException){
+                LOGGER.debug("Index already exists", e);
+                return indexName;
+            } else {
+                throw new RuntimeException(format("Could not create index: %s",indexName));
+            }
         }
-        System.out.println("response id: "+indexResponse.index());
+
         return indexResponse.index();
     }
 }
