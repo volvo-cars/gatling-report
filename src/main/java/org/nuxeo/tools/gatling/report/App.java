@@ -1,17 +1,9 @@
 package org.nuxeo.tools.gatling.report;
 
-import java.io.*;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import com.beust.jcommander.JCommander;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.log4j.Logger;
-
-import com.beust.jcommander.JCommander;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
@@ -20,7 +12,25 @@ import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.nuxeo.tools.gatling.report.dto.SimulationReportDto;
 
-public class App{
+import javax.xml.xpath.XPath;
+import java.io.File;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+
+import static java.lang.String.format;
+
+public class App {
 
   protected static final String PROGRAM_NAME = "java -jar gatling-report.jar";
 
@@ -32,8 +42,9 @@ public class App{
     options = new Options();
     JCommander command = new JCommander(options, args);
     command.setProgramName(PROGRAM_NAME);
-    if(null==options.help){System.out.println(args.toString());}
-    else {
+    if (null == options.help) {
+      System.out.println(args.toString());
+    } else {
       command.usage();
       System.exit(0);
     }
@@ -41,19 +52,34 @@ public class App{
 
   public static void main(String args[]) {
     new App(args);
-    List<SimulationContext> statistics = parseSimulationFiles();
+    SimulationContext statistics = parseSimulationFiles();
     generateReport(statistics);
   }
-  
 
-  protected static List<SimulationContext> parseSimulationFiles() {
-    List<SimulationContext> stats = options
-        .simulations
-        .stream()
-        .map(simulation -> parseSimulationFile(new File(simulation))).collect(
-            Collectors.toList());
 
-    return stats;
+  protected static SimulationContext parseSimulationFiles() {
+    Optional<SimulationContext> stats = getSimulationPath()
+        .max(Comparator.comparingLong(File::lastModified))
+        .map(App::parseSimulationFile);
+
+    if (!stats.isPresent()) {
+      throw new IllegalArgumentException(format("No simulation files found from path %s", options.simulationsPath));
+    }
+
+    return stats.get();
+  }
+
+  private static Stream<File> getSimulationPath() {
+    try {
+      Path path = Paths.get(options.simulationsPath);
+      return Files.walk(path)
+          .filter(Files::isRegularFile)
+          .map(Path::toFile)
+          .filter(f -> f.getName().endsWith("log"));
+
+    } catch (IOException e) {
+      throw new IllegalArgumentException(format("No simulation files found from path %s", options.simulationsPath));
+    }
   }
 
   protected static SimulationContext parseSimulationFile(File file) {
@@ -62,19 +88,19 @@ public class App{
       SimulationParser parser = ParserFactory.getParser(file, 1.5f);
       return parser.parse();
     } catch (IOException e) {
-      throw new IllegalStateException("ERROR");
+      throw new IllegalStateException("ERROR", e);
     }
   }
 
-  private static List<SimulationReportDto> generateSimulationReports(List<SimulationContext> statistics) {
-    //TODO: is there a need for multiple scenarios?
+  private static List<SimulationReportDto> generateSimulationReports(SimulationContext statistics) {
     return statistics
-            .stream()
-            .flatMap(stat -> stat.reqStats.entrySet().stream().map(entry -> toDto(entry)))
-            .collect(Collectors.toList());
+        .reqStats
+        .entrySet()
+        .stream()
+        .map(App::toDto).collect(Collectors.toList());
   }
 
-  protected static void generateReport(List<SimulationContext> statistics) {
+  protected static void generateReport(SimulationContext statistics) {
     List<SimulationReportDto> reports = generateSimulationReports(statistics);
     uploadReports(reports);
   }
@@ -115,8 +141,9 @@ public class App{
 
   private static SimulationReportDto toDto(Map.Entry<String, RequestStat> entry) {
     return new SimulationReportDto(entry.getKey(), entry.getValue().successCount, entry.getValue().errorCount,
-            entry.getValue().start,entry.getValue().end,entry.getValue().duration,entry.getValue().min,
-            entry.getValue().max, entry.getValue().p50, entry.getValue().p90, entry.getValue().p95, entry.getValue().p99);
+        entry.getValue().start, entry.getValue().end, entry.getValue().duration, entry.getValue().min,
+        entry.getValue().max, entry.getValue().p50, entry.getValue().p90, entry.getValue().p95, entry.getValue().p99
+    );
   }
 
 }

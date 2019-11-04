@@ -23,8 +23,8 @@ import java.util.List;
 
 public class Options {
 
-    @Parameter(required = true, description = "SIMULATION.LOG...")
-    public List<String> simulations = Lists.newArrayList();
+    @Parameter(names = { "--folder", "-f" }, description = "path to the SIMULATION.LOG...")
+    public String simulationsPath;
 
     @Parameter(names = { "--cluster_name", "-c" }, description = "Elastic search cluster name")
     public String clusterName;
