@@ -1,23 +1,19 @@
 package org.nuxeo.tools.gatling.report;
 
 import com.beust.jcommander.JCommander;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.HttpHost;
 import org.apache.log4j.Logger;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.common.transport.TransportAddress;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.nuxeo.tools.gatling.report.dto.SimulationReportDto;
 
-import javax.xml.xpath.XPath;
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -106,35 +102,22 @@ public class App {
   }
 
   private static void uploadReports(List<SimulationReportDto> reports) {
-    String index = Utils.createESIndex(options.url);
-
-    Settings settings = Settings.builder()
-        .put("client.transport.sniff", true)
-        .put("cluster.name", options.clusterName)
-        .build();
-
-    Client client = new PreBuiltTransportClient(settings).addTransportAddress(
-        new TransportAddress(getHostByName(), options.port));
-
+    RestHighLevelClient client = new RestHighLevelClient(RestClient.builder(new HttpHost(options.url, 9200)));
+    String index = Utils.createESIndex(client);
     reports.forEach(report -> uploadSimulation(index, client, report));
   }
 
-  private static InetAddress getHostByName() {
+  private static void uploadSimulation(String index, RestHighLevelClient client, SimulationReportDto report) {
     try {
-      return InetAddress.getByName(options.hostname);
-    } catch (UnknownHostException e) {
-      throw new RuntimeException(e);
-    }
-  }
 
-  private static void uploadSimulation(String index, Client client, SimulationReportDto report) {
-    try {
       String json = new ObjectMapper().writeValueAsString(report);
-      String type = "Simulation";
-      IndexResponse response = client.prepareIndex(index, type)
-          .setSource(json, XContentType.JSON).get();
+      IndexRequest request = new IndexRequest(index);
+      request.id(report.getId());
+      request.source(json, XContentType.JSON);
+
+      IndexResponse response = client.index(request, RequestOptions.DEFAULT);
       LOGGER.debug(response.toString());
-    } catch (JsonProcessingException e) {
+    } catch (IOException e) {
       LOGGER.error("Error while processing document", e);
     }
   }

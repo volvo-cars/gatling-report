@@ -16,11 +16,9 @@
 
 package org.nuxeo.tools.gatling.report;
 
-import org.apache.http.HttpHost;
 import org.apache.log4j.Logger;
 import org.elasticsearch.ElasticsearchStatusException;
 import org.elasticsearch.client.RequestOptions;
-import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.CreateIndexResponse;
@@ -117,13 +115,10 @@ public class Utils {
         }
     }
 
-    public static String createESIndex(String url){
-        RestHighLevelClient client = new RestHighLevelClient(
-                RestClient.builder(new HttpHost(url,9200)));
+    public static String createESIndex(RestHighLevelClient client){
 
         String timeStamp = new SimpleDateFormat("yyyy.MM.dd").format(new Date());
         String indexName = "gatling-report-".concat(timeStamp);
-        CreateIndexResponse indexResponse = null;
         CreateIndexRequest request = new CreateIndexRequest(indexName);
 
         try {
@@ -131,7 +126,11 @@ public class Utils {
                     .put("index.number_of_shards", 3)
                     .put("index.number_of_replicas", 0));
 
-            indexResponse = client.indices().create(request, RequestOptions.DEFAULT);
+            CreateIndexResponse indexResponse = client
+                .indices()
+                .create(request, RequestOptions.DEFAULT);
+
+            return indexResponse.index();
         } catch (ElasticsearchStatusException | IOException e) {
             if (e instanceof ElasticsearchStatusException){
                 LOGGER.debug("Index already exists", e);
@@ -141,6 +140,5 @@ public class Utils {
             }
         }
 
-        return indexResponse.index();
     }
 }

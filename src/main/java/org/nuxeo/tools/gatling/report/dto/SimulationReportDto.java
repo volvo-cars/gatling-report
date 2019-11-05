@@ -2,8 +2,11 @@ package org.nuxeo.tools.gatling.report.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 
+import java.util.UUID;
+
 public class SimulationReportDto {
 
+  private final String id;
   private final String scenario;
   private final Long successCount;
   private final Long errorCount;
@@ -16,6 +19,7 @@ public class SimulationReportDto {
   public SimulationReportDto(String scenario, Long successCount, Long errorCount, Long start, Long end,
                              double duration, Long min, Long max, Long p50, Long p90, Long p95, Long p99)
   {
+    this.id = UUID.randomUUID().toString();
     this.scenario = scenario;
     this.successCount = successCount;
     this.errorCount = errorCount;
@@ -28,6 +32,10 @@ public class SimulationReportDto {
     this.p90 = p90;
     this.p95 = p95;
     this.p99 = p99;
+  }
+
+  public String getId() {
+    return id;
   }
 
   public String getScenario() {
