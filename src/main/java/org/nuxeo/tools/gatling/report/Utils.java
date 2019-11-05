@@ -17,12 +17,18 @@
 package org.nuxeo.tools.gatling.report;
 
 import org.apache.log4j.Logger;
+import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.ElasticsearchStatusException;
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.CreateIndexRequest;
 import org.elasticsearch.client.indices.CreateIndexResponse;
 import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.xcontent.XContentBuilder;
+import org.elasticsearch.common.xcontent.XContentFactory;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.rest.RestStatus;
 
 import java.io.*;
 import java.net.Authenticator;
@@ -117,14 +123,25 @@ public class Utils {
 
     public static String createESIndex(RestHighLevelClient client){
 
-        String timeStamp = new SimpleDateFormat("yyyy.MM.dd").format(new Date());
-        String indexName = "gatling-report-".concat(timeStamp);
+        String indexName = generateDailyIndexName();
         CreateIndexRequest request = new CreateIndexRequest(indexName);
 
         try {
             request.settings(Settings.builder()
                     .put("index.number_of_shards", 3)
                     .put("index.number_of_replicas", 0));
+
+            request.mapping(
+                    "{\n" +
+                            "  \"_doc\": {\n" +
+                                "  \"properties\": {\n" +
+                                "    \"@timestamp\": {\n" +
+                                "      \"type\": \"date\"\n" +
+                                "    }\n" +
+                                "  }\n" +
+                            "  }\n" +
+                            "}",
+                    XContentType.JSON);
 
             CreateIndexResponse indexResponse = client
                 .indices()
@@ -138,6 +155,26 @@ public class Utils {
             } else {
                 throw new RuntimeException(format("Could not create index: %s",indexName));
             }
+        }
+
+    }
+
+    private static String generateDailyIndexName() {
+        String timeStamp = new SimpleDateFormat("yyyy.MM.dd").format(new Date());
+        return "gatling-report-".concat(timeStamp);
+    }
+
+    public static void deleteESIndex(RestHighLevelClient client) {
+        String indexName = generateDailyIndexName();
+        try {
+            DeleteIndexRequest request = new DeleteIndexRequest(indexName);
+            client.indices().delete(request, RequestOptions.DEFAULT);
+        } catch(ElasticsearchException exception) {
+            if (exception.status() == RestStatus.NOT_FOUND) {
+                LOGGER.info(String.format("Index not found, %s",indexName));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
     }

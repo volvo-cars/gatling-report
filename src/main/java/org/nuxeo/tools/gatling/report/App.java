@@ -104,7 +104,12 @@ public class App {
 
   private static void uploadReports(List<SimulationReportDto> reports) {
     RestHighLevelClient client = new RestHighLevelClient(RestClient.builder(new HttpHost(options.url, 9200)));
+
+    if (options.deleteIndex)
+      Utils.deleteESIndex(client);
+
     String index = Utils.createESIndex(client);
+
     reports.forEach(report -> uploadSimulation(index, client, report));
     LOGGER.info("Upload completed");
   }

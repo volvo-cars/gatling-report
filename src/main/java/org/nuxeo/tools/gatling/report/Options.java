@@ -41,4 +41,6 @@ public class Options {
     @Parameter(names = { "--help"}, description = "Display this message.")
     public Boolean help;
 
+    @Parameter(names = { "-d", "--delete_index" }, description = "Delete the daily index before creating one.")
+    public boolean deleteIndex = false;
 }
