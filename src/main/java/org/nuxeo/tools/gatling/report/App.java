@@ -50,6 +50,7 @@ public class App {
     new App(args);
     SimulationContext statistics = parseSimulationFiles();
     generateReport(statistics);
+    System.exit(0);
   }
 
 
@@ -105,6 +106,7 @@ public class App {
     RestHighLevelClient client = new RestHighLevelClient(RestClient.builder(new HttpHost(options.url, 9200)));
     String index = Utils.createESIndex(client);
     reports.forEach(report -> uploadSimulation(index, client, report));
+    LOGGER.info("Upload completed");
   }
 
   private static void uploadSimulation(String index, RestHighLevelClient client, SimulationReportDto report) {
@@ -116,7 +118,7 @@ public class App {
       request.source(json, XContentType.JSON);
 
       IndexResponse response = client.index(request, RequestOptions.DEFAULT);
-      LOGGER.debug(response.toString());
+      LOGGER.info(response.toString());
     } catch (IOException e) {
       LOGGER.error("Error while processing document", e);
     }

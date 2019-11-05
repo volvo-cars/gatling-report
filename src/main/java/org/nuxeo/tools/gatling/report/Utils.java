@@ -133,7 +133,7 @@ public class Utils {
             return indexResponse.index();
         } catch (ElasticsearchStatusException | IOException e) {
             if (e instanceof ElasticsearchStatusException){
-                LOGGER.debug("Index already exists", e);
+                LOGGER.info("Index already exists", e);
                 return indexName;
             } else {
                 throw new RuntimeException(format("Could not create index: %s",indexName));
