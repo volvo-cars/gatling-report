@@ -137,6 +137,14 @@ public class Utils {
                                 "  \"properties\": {\n" +
                                 "    \"@timestamp\": {\n" +
                                 "      \"type\": \"date\"\n" +
+                                "    },\n" +
+                                "    \"start\": {\n" +
+                                "      \"type\": \"date\",\n" +
+                                "      \"format\": \"epoch_millis\"\n" +
+                                "    },\n" +
+                                "    \"end\": {\n" +
+                                "      \"type\": \"date\",\n" +
+                                "      \"format\": \"epoch_millis\"\n" +
                                 "    }\n" +
                                 "  }\n" +
                             "  }\n" +
