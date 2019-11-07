@@ -1,6 +1,8 @@
 package org.nuxeo.tools.gatling.report.dto;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import org.nuxeo.tools.gatling.report.Apdex;
+import org.nuxeo.tools.gatling.report.Apdex.Rating;
 
 import java.util.UUID;
 
@@ -14,10 +16,11 @@ public class SimulationReportDto {
   private final Long end;
   private final double duration;
   private final Long min, max, p50, p90, p95, p99;
+  private final Rating rating;
 
   @JsonCreator
   public SimulationReportDto(String scenario, Long successCount, Long errorCount, Long start, Long end,
-                             double duration, Long min, Long max, Long p50, Long p90, Long p95, Long p99)
+                             double duration, Long min, Long max, Long p50, Long p90, Long p95, Long p99, Rating rating)
   {
     this.id = UUID.randomUUID().toString();
     this.scenario = scenario;
@@ -32,6 +35,7 @@ public class SimulationReportDto {
     this.p90 = p90;
     this.p95 = p95;
     this.p99 = p99;
+    this.rating = rating;
   }
 
   public String getId() {
@@ -84,5 +88,9 @@ public class SimulationReportDto {
 
   public Long getP99() {
     return p99;
+  }
+
+  public Rating getRating() {
+    return rating;
   }
 }

@@ -132,7 +132,8 @@ public class App {
   private static SimulationReportDto toDto(Map.Entry<String, RequestStat> entry) {
     return new SimulationReportDto(entry.getKey(), entry.getValue().successCount, entry.getValue().errorCount,
         entry.getValue().start, entry.getValue().end, entry.getValue().duration, entry.getValue().min,
-        entry.getValue().max, entry.getValue().p50, entry.getValue().p90, entry.getValue().p95, entry.getValue().p99
+        entry.getValue().max, entry.getValue().p50, entry.getValue().p90, entry.getValue().p95, entry.getValue().p99,
+            entry.getValue().apdex.getRating()
     );
   }
 
