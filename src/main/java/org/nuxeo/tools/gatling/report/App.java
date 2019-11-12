@@ -103,7 +103,7 @@ public class App {
   }
 
   private static void uploadReports(List<SimulationReportDto> reports) {
-    RestHighLevelClient client = new RestHighLevelClient(RestClient.builder(new HttpHost(options.url, 9200)));
+    RestHighLevelClient client = new RestHighLevelClient(RestClient.builder(new HttpHost(options.url, options.port)));
 
 //    if (options.deleteIndex)
 //      Utils.deleteESIndex(client);
