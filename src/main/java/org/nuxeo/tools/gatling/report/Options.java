@@ -20,7 +20,7 @@ public class Options {
     public String url;
 
     @Parameter(names = { "--help"}, description = "Display this message.")
-    public Boolean help;
+    public boolean help = false;
 
     @Parameter(names = { "-d", "--delete_index" }, description = "Delete the daily index before creating one.")
     public boolean deleteIndex = false;

@@ -42,9 +42,7 @@ public class App {
     options = new Options();
     JCommander command = new JCommander(options, args);
     command.setProgramName(PROGRAM_NAME);
-    if (null == options.help) {
-      System.out.println(args.toString());
-    } else {
+    if (options.help) {
       command.usage();
       System.exit(0);
     }
