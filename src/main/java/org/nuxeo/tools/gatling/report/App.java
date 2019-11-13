@@ -3,15 +3,19 @@ package org.nuxeo.tools.gatling.report;
 import com.beust.jcommander.JCommander;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.log4j.Logger;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.nuxeo.tools.gatling.report.dto.SimulationReportDto;
 
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.SSLSession;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -103,10 +107,10 @@ public class App {
   }
 
   private static void uploadReports(List<SimulationReportDto> reports) {
-    RestHighLevelClient client = new RestHighLevelClient(RestClient.builder(new HttpHost(options.url, options.port)));
+    RestHighLevelClient client = createHttpsRestClient(options.url, options.port);
 
-//    if (options.deleteIndex)
-//      Utils.deleteESIndex(client);
+    if (options.deleteIndex)
+      Utils.deleteESIndex(client);
 
     String index = Utils.createESIndex(client);
 
@@ -114,7 +118,17 @@ public class App {
     LOGGER.info("Upload completed");
   }
 
+  private static RestHighLevelClient createHttpsRestClient(String url, Integer port) {
+    HttpHost httpsHost = new HttpHost(url, port, "https");
+    RestClientBuilder lowLevelClientBuilder = RestClient
+        .builder(httpsHost)
+        .setHttpClientConfigCallback(httpAsyncClientBuilder -> httpAsyncClientBuilder.setSSLHostnameVerifier((hostname, session) -> true));
+
+    return new RestHighLevelClient(lowLevelClientBuilder);
+  }
+
   private static void uploadSimulation(String index, RestHighLevelClient client, SimulationReportDto report) {
+
     try {
 
       String json = new ObjectMapper().writeValueAsString(report);
