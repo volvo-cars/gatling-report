@@ -133,7 +133,6 @@ public class Utils {
 
             request.mapping(
                     "{\n" +
-                            "  \"_doc\": {\n" +
                                 "  \"properties\": {\n" +
                                 "    \"@timestamp\": {\n" +
                                 "      \"type\": \"date\"\n" +
@@ -147,7 +146,6 @@ public class Utils {
                                 "      \"format\": \"epoch_millis\"\n" +
                                 "    }\n" +
                                 "  }\n" +
-                            "  }\n" +
                             "}",
                     XContentType.JSON);
 
