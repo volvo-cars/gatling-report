@@ -3,7 +3,6 @@ package org.nuxeo.tools.gatling.report;
 import com.beust.jcommander.JCommander;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpHost;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.log4j.Logger;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.index.IndexResponse;
@@ -14,8 +13,6 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.nuxeo.tools.gatling.report.dto.SimulationReportDto;
 
-import javax.net.ssl.HostnameVerifier;
-import javax.net.ssl.SSLSession;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -25,10 +22,11 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static java.lang.String.format;
+import static java.util.stream.Collectors.*;
 
 public class App {
 
@@ -50,22 +48,34 @@ public class App {
 
   public static void main(String args[]) {
     new App(args);
-    SimulationContext statistics = parseSimulationFiles();
-    generateReport(statistics);
+    parseSimulationFiles().forEach(App::generateReport);
     System.exit(0);
   }
 
 
-  protected static SimulationContext parseSimulationFiles() {
-    Optional<SimulationContext> stats = getSimulationPath()
-        .max(Comparator.comparingLong(File::lastModified))
-        .map(App::parseSimulationFile);
+  protected static List<SimulationContext> parseSimulationFiles() {
+    Map<String, List<File>> filesPerPath = getSimulationPath()
+        .collect(groupingBy(App::getPathRoot, toList()));
 
-    if (!stats.isPresent()) {
+    List<SimulationContext> stats = filesPerPath.values()
+        .stream()
+        .map(l -> l.stream().max(Comparator.comparingLong(File::lastModified)))
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .map(App::parseSimulationFile)
+        .collect(toList());
+
+    if (stats.isEmpty()) {
       throw new IllegalArgumentException(format("No simulation files found from path %s", options.simulationsPath));
+    } else {
+      return stats;
     }
 
-    return stats.get();
+  }
+
+  private static String getPathRoot(File file) {
+    String absolutePath = file.getAbsolutePath();
+    return absolutePath.substring(0, absolutePath.lastIndexOf('-'));
   }
 
   private static Stream<File> getSimulationPath() {
@@ -96,7 +106,7 @@ public class App {
         .reqStats
         .entrySet()
         .stream()
-        .map(App::toDto).collect(Collectors.toList());
+        .map(App::toDto).collect(toList());
   }
 
   protected static void generateReport(SimulationContext statistics) {
@@ -128,7 +138,6 @@ public class App {
   private static void uploadSimulation(String index, RestHighLevelClient client, SimulationReportDto report) {
 
     try {
-
       String json = new ObjectMapper().writeValueAsString(report);
       IndexRequest request = new IndexRequest(index);
       request.id(report.getId());
