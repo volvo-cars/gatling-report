@@ -8,6 +8,7 @@ import java.util.UUID;
 
 public class SimulationReportDto {
 
+  private final String simulationName;
   private final String id;
   private final String scenario;
   private final Long successCount;
@@ -19,7 +20,7 @@ public class SimulationReportDto {
   private final Rating rating;
 
   @JsonCreator
-  public SimulationReportDto(String scenario, Long successCount, Long errorCount, Long start, Long end,
+  public SimulationReportDto(String simulationName, String scenario, Long successCount, Long errorCount, Long start, Long end,
                              double duration, Long min, Long max, Long p50, Long p90, Long p95, Long p99, Rating rating)
   {
     this.id = UUID.randomUUID().toString();
@@ -36,6 +37,7 @@ public class SimulationReportDto {
     this.p95 = p95;
     this.p99 = p99;
     this.rating = rating;
+    this.simulationName = simulationName;
   }
 
   public String getId() {
@@ -92,5 +94,9 @@ public class SimulationReportDto {
 
   public Rating getRating() {
     return rating;
+  }
+
+  public String getSimulationName() {
+    return simulationName;
   }
 }
